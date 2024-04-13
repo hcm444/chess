@@ -215,8 +215,6 @@ class Chessboard:
                     if target_piece == 0 or (piece < 0) != (target_piece < 0):
                         valid_moves.add((new_row, new_col))
 
-
-
         return valid_moves
 
     def get_fen(self):
