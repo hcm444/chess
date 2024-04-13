@@ -99,6 +99,16 @@ class Chessboard:
             self.selected_piece = None
             self.valid_moves = {}
 
+            # Check for en passant capture
+            if self.en_passant_target and (row, col) == self.en_passant_target:
+                if self.board[self.selected_piece[0] * 8 + col] == 0:  # Capture the pawn
+                    self.board[(row - 1) * 8 + col] = 0
+                elif self.board[self.selected_piece[0] * 8 + col] == 0:  # Capture the pawn
+                    self.board[(row + 1) * 8 + col] = 0
+
+            # Update en passant target square after move
+            self.en_passant_target = None
+
     def get_valid_moves(self, row, col):
         piece = self.board[row * 8 + col]
         valid_moves = set()
@@ -115,6 +125,13 @@ class Chessboard:
                 valid_moves.add((row - 1, col - 1))
             if row > 0 and col < 7 and self.board[(row - 1) * 8 + col + 1] < 0:
                 valid_moves.add((row - 1, col + 1))
+            if row == 3 and self.en_passant_target and col - 1 >= 0 and \
+                    (row, col - 1) == self.en_passant_target:
+                valid_moves.add((row - 1, col - 1))
+            if row == 3 and self.en_passant_target and col + 1 <= 7 and \
+                    (row, col + 1) == self.en_passant_target:
+                valid_moves.add((row - 1, col + 1))
+
 
         elif piece == -1:  # Black Pawn
             # Move one square forward
@@ -197,6 +214,8 @@ class Chessboard:
                     target_piece = self.board[new_row * 8 + new_col]
                     if target_piece == 0 or (piece < 0) != (target_piece < 0):
                         valid_moves.add((new_row, new_col))
+
+
 
         return valid_moves
 
