@@ -8,15 +8,19 @@ GREY = (128, 128, 128)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 
+
 class Chessboard:
     def __init__(self):
         self.board = np.zeros(64, dtype=int)  # 1D array representing the chessboard
+        self.active_color = None
+        self.castling_rights = None
+        self.en_passant_target = None
+        self.halfmove_clock = None
+        self.fullmove_number = None
         self.selected_piece = None
         self.valid_moves = {}
 
     def initialize_board_from_fen(self, fen):
-        rank_mapping = {'r': -4, 'n': -2, 'b': -3, 'q': -5, 'k': -6,
-                        'p': -1, 'R': 4, 'N': 2, 'B': 3, 'Q': 5, 'K': 6, 'P': 1}
         fen_parts = fen.split()
         fen_board = fen_parts[0]
         fen_board = fen_board.replace('/', '')  # Remove slashes denoting row separation
@@ -27,9 +31,22 @@ class Chessboard:
                 i += int(fen_board[fen_board_index])
                 fen_board_index += 1
             else:
-                self.board[i] = rank_mapping[fen_board[fen_board_index]]
+                self.board[i] = self.get_piece_value(fen_board[fen_board_index])
                 i += 1
                 fen_board_index += 1
+
+        # Set additional FEN information
+        self.active_color = fen_parts[1]  # 'w' for white, 'b' for black
+        self.castling_rights = fen_parts[2]  # Castling availability: 'KQkq' or '-'
+        self.en_passant_target = fen_parts[3]  # En passant target square in algebraic notation or '-'
+        self.halfmove_clock = int(fen_parts[4]) if fen_parts[4].isdigit() else None  # Halfmove clock
+        self.fullmove_number = int(fen_parts[5]) if len(fen_parts) > 5 and fen_parts[
+            5].isdigit() else None  # Fullmove number
+
+    def get_piece_value(self, symbol):
+        piece_mapping = {'r': -4, 'n': -2, 'b': -3, 'q': -5, 'k': -6,
+                         'p': -1, 'R': 4, 'N': 2, 'B': 3, 'Q': 5, 'K': 6, 'P': 1}
+        return piece_mapping.get(symbol, 0)
 
     def draw_board(self, win):
         win.fill(WHITE)
@@ -83,6 +100,7 @@ class Chessboard:
     def get_valid_moves(self, row, col):
         return {(row + 1, col), (row - 1, col), (row, col + 1), (row, col - 1)}  # Example: All adjacent squares
 
+
 def main():
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -90,7 +108,9 @@ def main():
     clock = pygame.time.Clock()
 
     chessboard = Chessboard()
-    chessboard.initialize_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
+    # Example FEN string for the starting position of a standard chess game
+    starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    chessboard.initialize_board_from_fen(starting_fen)
     run = True
 
     while run:
@@ -109,6 +129,7 @@ def main():
         clock.tick(60)
 
     pygame.quit()
+
 
 if __name__ == "__main__":
     main()
