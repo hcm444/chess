@@ -103,6 +103,7 @@ class Chessboard:
         piece = self.board[row * 8 + col]
         valid_moves = set()
 
+
         if piece == 1:  # White Pawn
             # Move one square forward
             if row > 0 and self.board[(row - 1) * 8 + col] == 0:
