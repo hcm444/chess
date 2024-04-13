@@ -1,7 +1,6 @@
 import pygame
 import numpy as np
 
-
 WIDTH, HEIGHT = 800, 800
 SQUARE_SIZE = WIDTH // 8
 WHITE = (255, 255, 255)
@@ -11,19 +10,26 @@ RED = (255, 0, 0)
 
 class Chessboard:
     def __init__(self):
-        self.board = np.zeros((8, 8), dtype=int)
-        self.initialize_board()
+        self.board = np.zeros(64, dtype=int)  # 1D array representing the chessboard
         self.selected_piece = None
         self.valid_moves = {}
 
-    def initialize_board(self):
-        starting_row = [4, 2, 3, 5, 6, 3, 2, 4]
-        for col, piece in enumerate(starting_row):
-            self.board[0][col] = piece  # White pieces
-            self.board[1][col] = 1  # White pawns
-
-            self.board[7][col] = -piece  # Black pieces
-            self.board[6][col] = -1  # Black pawns
+    def initialize_board_from_fen(self, fen):
+        rank_mapping = {'r': -4, 'n': -2, 'b': -3, 'q': -5, 'k': -6,
+                        'p': -1, 'R': 4, 'N': 2, 'B': 3, 'Q': 5, 'K': 6, 'P': 1}
+        fen_parts = fen.split()
+        fen_board = fen_parts[0]
+        fen_board = fen_board.replace('/', '')  # Remove slashes denoting row separation
+        fen_board_index = 0
+        i = 0
+        while i < len(self.board) and fen_board_index < len(fen_board):
+            if fen_board[fen_board_index].isdigit():  # Empty squares
+                i += int(fen_board[fen_board_index])
+                fen_board_index += 1
+            else:
+                self.board[i] = rank_mapping[fen_board[fen_board_index]]
+                i += 1
+                fen_board_index += 1
 
     def draw_board(self, win):
         win.fill(WHITE)
@@ -49,7 +55,7 @@ class Chessboard:
 
         for row in range(8):
             for col in range(8):
-                piece = self.board[row][col]
+                piece = self.board[row * 8 + col]
                 if piece != 0:
                     win.blit(piece_images[piece], (col * SQUARE_SIZE, row * SQUARE_SIZE))
 
@@ -62,15 +68,15 @@ class Chessboard:
         if self.selected_piece:
             self.move_piece(row, col)
         else:
-            piece = self.board[row][col]
+            piece = self.board[row * 8 + col]
             if piece != 0:
                 self.selected_piece = (row, col)
                 self.valid_moves = self.get_valid_moves(row, col)
 
     def move_piece(self, row, col):
         if (row, col) in self.valid_moves:
-            self.board[row][col] = self.board[self.selected_piece[0]][self.selected_piece[1]]
-            self.board[self.selected_piece[0]][self.selected_piece[1]] = 0
+            self.board[row * 8 + col] = self.board[self.selected_piece[0] * 8 + self.selected_piece[1]]
+            self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
             self.selected_piece = None
             self.valid_moves = {}
 
@@ -84,6 +90,7 @@ def main():
     clock = pygame.time.Clock()
 
     chessboard = Chessboard()
+    chessboard.initialize_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
     run = True
 
     while run:
