@@ -25,6 +25,52 @@ class Chessboard:
         self.promotion_square = None  # Track the square where promotion occurs
         self.promotion_piece = None  # Track the piece to promote to
 
+    def pawn_promotion(self, row, col, win):
+        self.valid_moves = {}  # Reset valid_moves dictionary
+        promotion_options = {"queen": 5, "knight": 2, "bishop": 3, "rook": 4}  # Piece name to integer mapping
+        promotion_index = 1  # Start at the first promotion option
+
+        # Display piece options (queen, knight, bishop, rook)
+        piece_images = {
+            "queen": pygame.transform.scale(pygame.image.load("static/white_queen.png"), (SQUARE_SIZE, SQUARE_SIZE)),
+            "knight": pygame.transform.scale(pygame.image.load("static/white_knight.png"), (SQUARE_SIZE, SQUARE_SIZE)),
+            "bishop": pygame.transform.scale(pygame.image.load("static/white_bishop.png"), (SQUARE_SIZE, SQUARE_SIZE)),
+            "rook": pygame.transform.scale(pygame.image.load("static/white_rook.png"), (SQUARE_SIZE, SQUARE_SIZE)),
+        }
+
+        run = True
+        while run:
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        promotion_index = (promotion_index - 1) % len(promotion_options)
+                    elif event.key == pygame.K_RIGHT:
+                        promotion_index = (promotion_index + 1) % len(promotion_options)
+                    elif event.key == pygame.K_RETURN:
+                        promotion_piece = list(promotion_options.values())[promotion_index]
+                        self.board[row * 8 + col] = promotion_piece
+                        run = False
+
+            # Redraw the board after promotion
+            self.draw_board(win)
+            self.draw_pieces(win)
+
+            # Redraw the square with the appropriate background color
+            if (row + col) % 2 == 0:
+                pygame.draw.rect(win, GREY, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            else:
+                pygame.draw.rect(win, WHITE, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+            # Display the selected promotion piece with the proper background color
+            selected_piece = list(promotion_options.keys())[promotion_index]
+            selected_piece_img = pygame.transform.scale(
+                pygame.image.load(f"static/white_{selected_piece}.png"),
+                (SQUARE_SIZE, SQUARE_SIZE))
+            win.blit(selected_piece_img, (col * SQUARE_SIZE, row * SQUARE_SIZE))
+
+            pygame.display.update()
 
     def initialize_board_from_fen(self, fen):
         fen_parts = fen.split()
@@ -118,7 +164,7 @@ class Chessboard:
                     self.selected_piece = (row, col)
                     self.valid_moves = self.get_valid_moves(row, col)
 
-    def move_piece(self, row, col):
+    def move_piece(self, row, col, win):
         if self.selected_piece and not self.piece_moved and not self.move_made:
             piece = self.board[self.selected_piece[0] * 8 + self.selected_piece[1]]
             if (row, col) != self.selected_piece:  # Ensure the destination is different from the current location
@@ -130,9 +176,9 @@ class Chessboard:
 
                     # Check for pawn promotion
                     if piece == 1 and row == 0:  # White pawn reached the top row
-                        self.board[row * 8 + col] = 5  # Promote to queen
+                        self.pawn_promotion(row, col, win)  # Pass the 'win' argument here
                     elif piece == -1 and row == 7:  # Black pawn reached the bottom row
-                        self.board[row * 8 + col] = -5  # Promote to queen
+                        self.pawn_promotion(row, col, win)  # Pass the 'win' argument here
 
                     self.selected_piece = None
                     self.valid_moves = {}
@@ -315,8 +361,8 @@ def main():
     clock = pygame.time.Clock()
 
     chessboard = Chessboard()
-
-    starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
+    starting_fen = "rnbq1bnr/pppkPppp/8/8/3p4/2P5/PP2PPPP/RNBQKBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
     font = pygame.font.SysFont(None, 36)  # Use SysFont instead of None
@@ -351,7 +397,7 @@ def main():
                             # If a piece is already selected, try to move it to the clicked square
                             if (row,
                                 col) != chessboard.selected_piece:  # Ensure the destination is different from the current location
-                                chessboard.move_piece(row, col)
+                                chessboard.move_piece(row, col, win)  # Pass the 'win' variable here
                                 if chessboard.piece_moved:  # Check if a piece has been successfully moved
                                     chessboard.selected_piece = None
                                     chessboard.valid_moves = {}
