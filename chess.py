@@ -1,7 +1,8 @@
 import pygame
 import numpy as np
 
-WIDTH, HEIGHT = 800, 800
+
+WIDTH, HEIGHT = 800, 1000
 SQUARE_SIZE = WIDTH // 8
 WHITE = (255, 255, 255)
 GREY = (128, 128, 128)
@@ -19,6 +20,7 @@ class Chessboard:
         self.fullmove_number = None
         self.selected_piece = None
         self.valid_moves = {}
+        self.piece_moved = False  # New flag to track whether a piece has been moved during the current turn
 
     def initialize_board_from_fen(self, fen):
         fen_parts = fen.split()
@@ -49,6 +51,7 @@ class Chessboard:
 
     def switch_active_color(self):
         self.active_color = 'b' if self.active_color == 'w' else 'w'
+        self.piece_moved = False  # Reset piece_moved flag at the start of each turn
 
     def draw_board(self, win):
         win.fill(WHITE)
@@ -84,30 +87,52 @@ class Chessboard:
         return row, col
 
     def select_piece(self, row, col):
-        if self.selected_piece:
-            self.move_piece(row, col)
-        else:
-            piece = self.board[row * 8 + col]
-            if piece != 0:
-                self.selected_piece = (row, col)
-                self.valid_moves = self.get_valid_moves(row, col)
+        if not self.piece_moved:  # Check if a piece has already been moved in this turn
+            if self.selected_piece:
+                self.move_piece(row, col)
+            else:
+                piece = self.board[row * 8 + col]
+                if piece != 0:
+                    self.selected_piece = (row, col)
+                    self.valid_moves = self.get_valid_moves(row, col)
 
     def move_piece(self, row, col):
-        if (row, col) in self.valid_moves:
-            self.board[row * 8 + col] = self.board[self.selected_piece[0] * 8 + self.selected_piece[1]]
-            self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
-            self.selected_piece = None
-            self.valid_moves = {}
+        if self.selected_piece and not self.piece_moved:
+            piece = self.board[self.selected_piece[0] * 8 + self.selected_piece[1]]
+            if (row, col) in self.valid_moves and \
+                    (piece > 0 and self.active_color == 'w' or piece < 0 and self.active_color == 'b'):
+                # Move the piece only if it's the correct player's turn
+                self.board[row * 8 + col] = piece
+                self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
+                self.selected_piece = None
+                self.valid_moves = {}
+                self.piece_moved = True
 
-            # Check for en passant capture
-            if self.en_passant_target and (row, col) == self.en_passant_target:
-                if self.board[self.selected_piece[0] * 8 + col] == 0:  # Capture the pawn
-                    self.board[(row - 1) * 8 + col] = 0
-                elif self.board[self.selected_piece[0] * 8 + col] == 0:  # Capture the pawn
-                    self.board[(row + 1) * 8 + col] = 0
+                # Check for castling
+                if abs(piece) == 6 and self.selected_piece is not None and abs(self.selected_piece[1] - col) == 2:
+                    # Castling move, move the rook
+                    if col == 6:  # King side castling
+                        self.board[row * 8 + 5] = self.board[row * 8 + 7]
+                        self.board[row * 8 + 7] = 0
+                    elif col == 2:  # Queen side castling
+                        self.board[row * 8 + 3] = self.board[row * 8]
+                        self.board[row * 8] = 0
 
-            # Update en passant target square after move
-            self.en_passant_target = None
+                # Update en passant target square after move
+                self.en_passant_target = None
+
+    def squares_between_empty(self, start_row, start_col, end_col):
+        # Check if the squares between start_col and end_col are empty
+        step = 1 if end_col > start_col else -1
+        for col in range(start_col + step, end_col, step):
+            if self.board[start_row * 8 + col] != 0:
+                return False
+        return True
+
+    def squares_not_under_attack(self, row, col):
+        # Check if the squares the king moves through and ends up in are not under attack
+        # For simplicity, assume all squares are safe for now
+        return True
 
     def get_valid_moves(self, row, col):
         piece = self.board[row * 8 + col]
@@ -206,15 +231,18 @@ class Chessboard:
                     else:
                         break
 
+
+
         elif abs(piece) == 6:  # King
+            # King moves
             king_moves = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
             for move in king_moves:
                 new_row, new_col = row + move[0], col + move[1]
                 if 0 <= new_row < 8 and 0 <= new_col < 8:
                     target_piece = self.board[new_row * 8 + new_col]
                     if target_piece == 0 or (piece < 0) != (target_piece < 0):
-                        valid_moves.add((new_row, new_col))
-
+                        if self.squares_not_under_attack(row, col) and self.squares_not_under_attack(new_row, new_col):
+                            valid_moves.add((new_row, new_col))
         return valid_moves
 
     def get_fen(self):
@@ -260,6 +288,7 @@ def main():
     starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
+    font = pygame.font.SysFont(None, 36)  # Use SysFont instead of None
     print(chessboard.get_fen())  # Print initial FEN string
 
     while run:
@@ -270,19 +299,40 @@ def main():
                 if pygame.mouse.get_pressed()[0]:
                     x, y = pygame.mouse.get_pos()
                     row, col = chessboard.get_square(x, y)
-                    chessboard.select_piece(row, col)
+                    if chessboard.selected_piece is None:
+                        # If no piece is selected, select the piece at the clicked square
+                        if chessboard.board[row * 8 + col] != 0:
+                            # Check if it's the current player's turn
+                            piece = chessboard.board[row * 8 + col]
+                            if (piece > 0 and chessboard.active_color == 'w') or (
+                                    piece < 0 and chessboard.active_color == 'b'):
+                                chessboard.selected_piece = (row, col)
+                                chessboard.valid_moves = chessboard.get_valid_moves(row, col)
+                    else:
+                        # If a piece is already selected, try to move it to the clicked square
+                        chessboard.move_piece(row, col)
+                        chessboard.selected_piece = None
+                        chessboard.valid_moves = {}
+                        print(chessboard.get_fen())  # Print FEN string after each move
 
-                    print(chessboard.get_fen())  # Print FEN string after each move
+                        # Switch active color after handling events and drawing the board
+                        chessboard.switch_active_color()  # Move this line inside the event handling block
 
+        # Draw the board and pieces
         chessboard.draw_board(win)
         chessboard.draw_pieces(win)
+
+        # Render text areas
+        turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
+        win.blit(turn_text, (20, HEIGHT - 20))  # Position the text below the game board
+
+        castle_prompt_text = font.render("Do you want to castle? (y/n)", True, BLACK)
+        win.blit(castle_prompt_text, (20, HEIGHT - 60))  # Position the text below the game board with some spacing
+
         pygame.display.update()
         clock.tick(60)
 
-        chessboard.switch_active_color()
-
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
