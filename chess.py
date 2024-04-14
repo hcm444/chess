@@ -33,15 +33,9 @@ class Chessboard:
             "bishop": (3, -3),
             "rook": (4, -4)
         }  # Piece name to integer mapping for both white and black
-        promotion_index = 1  # Start at the first promotion option
+        promotion_index = 0  # Start at the first promotion option
 
         # Display piece options (queen, knight, bishop, rook)
-        piece_images = {
-            "queen": pygame.transform.scale(pygame.image.load("static/white_queen.png"), (SQUARE_SIZE, SQUARE_SIZE)),
-            "knight": pygame.transform.scale(pygame.image.load("static/white_knight.png"), (SQUARE_SIZE, SQUARE_SIZE)),
-            "bishop": pygame.transform.scale(pygame.image.load("static/white_bishop.png"), (SQUARE_SIZE, SQUARE_SIZE)),
-            "rook": pygame.transform.scale(pygame.image.load("static/white_rook.png"), (SQUARE_SIZE, SQUARE_SIZE)),
-        }
 
         run = True
         while run:
