@@ -27,7 +27,12 @@ class Chessboard:
 
     def pawn_promotion(self, row, col, win):
         self.valid_moves = {}  # Reset valid_moves dictionary
-        promotion_options = {"queen": 5, "knight": 2, "bishop": 3, "rook": 4}  # Piece name to integer mapping
+        promotion_options = {
+            "queen": (5, -5),
+            "knight": (2, -2),
+            "bishop": (3, -3),
+            "rook": (4, -4)
+        }  # Piece name to integer mapping for both white and black
         promotion_index = 1  # Start at the first promotion option
 
         # Display piece options (queen, knight, bishop, rook)
@@ -49,7 +54,9 @@ class Chessboard:
                     elif event.key == pygame.K_RIGHT:
                         promotion_index = (promotion_index + 1) % len(promotion_options)
                     elif event.key == pygame.K_RETURN:
-                        promotion_piece = list(promotion_options.values())[promotion_index]
+                        promotion_piece = list(promotion_options.values())[promotion_index][0]
+                        if self.active_color == 'b':  # If black's turn, choose the negative value for promotion
+                            promotion_piece = list(promotion_options.values())[promotion_index][1]
                         self.board[row * 8 + col] = promotion_piece
                         run = False
 
@@ -65,9 +72,14 @@ class Chessboard:
 
             # Display the selected promotion piece with the proper background color
             selected_piece = list(promotion_options.keys())[promotion_index]
-            selected_piece_img = pygame.transform.scale(
-                pygame.image.load(f"static/white_{selected_piece}.png"),
-                (SQUARE_SIZE, SQUARE_SIZE))
+            if self.active_color == 'b':  # If black's turn, load black piece images
+                selected_piece_img = pygame.transform.scale(
+                    pygame.image.load(f"static/black_{selected_piece}.png"),
+                    (SQUARE_SIZE, SQUARE_SIZE))
+            else:  # Otherwise, load white piece images
+                selected_piece_img = pygame.transform.scale(
+                    pygame.image.load(f"static/white_{selected_piece}.png"),
+                    (SQUARE_SIZE, SQUARE_SIZE))
             win.blit(selected_piece_img, (col * SQUARE_SIZE, row * SQUARE_SIZE))
 
             pygame.display.update()
@@ -362,7 +374,7 @@ def main():
 
     chessboard = Chessboard()
     #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-    starting_fen = "rnbq1bnr/pppkPppp/8/8/3p4/2P5/PP2PPPP/RNBQKBNR w KQkq - 0 1"
+    starting_fen = "rnbq1bnr/pppkPppp/8/8/2P5/1Q6/PP1pPPPP/RNB1KBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
     font = pygame.font.SysFont(None, 36)  # Use SysFont instead of None
