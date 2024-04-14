@@ -338,9 +338,6 @@ def main():
         turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
         win.blit(turn_text, (20, HEIGHT - 20))  # Position the text below the game board
 
-        castle_prompt_text = font.render("Do you want to castle? (y/n)", True, BLACK)
-        win.blit(castle_prompt_text, (20, HEIGHT - 60))  # Position the text below the game board with some spacing
-
         pygame.display.update()
         clock.tick(60)
 
