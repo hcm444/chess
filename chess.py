@@ -330,6 +330,8 @@ def main():
                 run = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button clicked
+                    # Inside the MOUSEBUTTONDOWN event handling block
+                    # Inside the MOUSEBUTTONDOWN event handling block
                     if pygame.mouse.get_pressed()[0]:
                         x, y = pygame.mouse.get_pos()
                         row, col = chessboard.get_square(x, y)
@@ -342,6 +344,9 @@ def main():
                                         piece < 0 and chessboard.active_color == 'b'):
                                     chessboard.selected_piece = (row, col)
                                     chessboard.valid_moves = chessboard.get_valid_moves(row, col)
+                                    if not chessboard.valid_moves:  # If no valid moves, deselect the piece
+                                        chessboard.selected_piece = None
+                                        chessboard.valid_moves = {}
                         else:
                             # If a piece is already selected, try to move it to the clicked square
                             if (row,
