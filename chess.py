@@ -25,6 +25,27 @@ class Chessboard:
         self.promotion_square = None  # Track the square where promotion occurs
         self.promotion_piece = None  # Track the piece to promote to
 
+    def is_king_in_check(self):
+        king_row, king_col = None, None
+        # Find the position of the king
+        for row in range(8):
+            for col in range(8):
+                piece = self.board[row * 8 + col]
+                if piece == 6 and self.active_color == 'w':  # White king
+                    king_row, king_col = row, col
+                elif piece == -6 and self.active_color == 'b':  # Black king
+                    king_row, king_col = row, col
+
+        # Check if any opponent's piece has a valid move to capture the king
+        for row in range(8):
+            for col in range(8):
+                piece = self.board[row * 8 + col]
+                if (piece > 0 and self.active_color == 'b') or (piece < 0 and self.active_color == 'w'):
+                    # This is an opponent's piece
+                    valid_moves = self.get_valid_moves(row, col)
+                    if (king_row, king_col) in valid_moves:
+                        return True  # King is in check
+        return False  # King is not in check
 
     def initialize_board_from_fen(self, fen):
         fen_parts = fen.split()
@@ -76,6 +97,36 @@ class Chessboard:
                         # Fill valid move squares with white-green color
                         pygame.draw.rect(win, light_green,
                                          (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+
+    def is_checkmate(self):
+        # Check if the current player's king is in check
+        if not self.is_king_in_check():
+            return False  # King is not in check, so it's not checkmate
+
+        # Generate all legal moves for the current player
+        for row in range(8):
+            for col in range(8):
+                piece = self.board[row * 8 + col]
+                if (piece > 0 and self.active_color == 'w') or (piece < 0 and self.active_color == 'b'):
+                    valid_moves = self.get_valid_moves(row, col)
+                    for move in valid_moves:
+                        # Simulate making the move on a copy of the board
+                        piece_at_move = self.board[move[0] * 8 + move[1]]
+                        self.board[move[0] * 8 + move[1]] = piece
+                        self.board[row * 8 + col] = 0
+
+                        # Check if the king is still in check after the move
+                        if not self.is_king_in_check():
+                            # Undo the move
+                            self.board[move[0] * 8 + move[1]] = piece_at_move
+                            self.board[row * 8 + col] = piece
+                            return False  # King is not in checkmate
+
+                        # Undo the move
+                        self.board[move[0] * 8 + move[1]] = piece_at_move
+                        self.board[row * 8 + col] = piece
+
+        return True  # King is in checkmate
 
     def draw_pieces(self, win):
         piece_images = {
@@ -325,6 +376,7 @@ def main():
     # Inside the main loop where event handling occurs
     double_click_time = 0  # Variable to store the time of the last click
     while run:
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -357,8 +409,13 @@ def main():
                                     chessboard.valid_moves = {}
                                     print(chessboard.get_fen())  # Print FEN string after each move
 
+
                                     # Switch active color after handling events and drawing the board
                                     chessboard.switch_active_color()  # Move this line inside the event handling block
+                                    if chessboard.is_king_in_check():
+                                        print("King is in check!")
+                                    if chessboard.is_checkmate():
+                                        print("Checkmate!")
 
         # Draw the board and pieces
         chessboard.draw_board(win)
