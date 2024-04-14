@@ -127,6 +127,13 @@ class Chessboard:
                     # Move the piece only if it's the correct player's turn
                     self.board[row * 8 + col] = piece
                     self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
+
+                    # Check for pawn promotion
+                    if piece == 1 and row == 0:  # White pawn reached the top row
+                        self.board[row * 8 + col] = 5  # Promote to queen
+                    elif piece == -1 and row == 7:  # Black pawn reached the bottom row
+                        self.board[row * 8 + col] = -5  # Promote to queen
+
                     self.selected_piece = None
                     self.valid_moves = {}
                     self.piece_moved = True
