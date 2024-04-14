@@ -22,6 +22,8 @@ class Chessboard:
         self.valid_moves = {}
         self.piece_moved = False  # Flag to track whether a piece has been moved during the current turn
         self.move_made = False  # Flag to track whether a move has been made during the current turn
+        self.promotion_square = None  # Track the square where promotion occurs
+        self.promotion_piece = None  # Track the piece to promote to
 
 
     def initialize_board_from_fen(self, fen):
@@ -58,9 +60,22 @@ class Chessboard:
 
     def draw_board(self, win):
         win.fill(WHITE)
+        light_green = (144, 238, 144)
+        dark_green = (0, 128, 0)
         for row in range(8):
-            for col in range(row % 2, 8, 2):
-                pygame.draw.rect(win, GREY, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            for col in range(8):
+                if (row + col) % 2 == 0:
+                    pygame.draw.rect(win, GREY, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+                    if (row, col) in self.valid_moves:
+                        # Fill valid move squares with green-grey color
+                        pygame.draw.rect(win, dark_green,
+                                         (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+                else:
+                    pygame.draw.rect(win, WHITE, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+                    if (row, col) in self.valid_moves:
+                        # Fill valid move squares with white-green color
+                        pygame.draw.rect(win, light_green,
+                                         (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
     def draw_pieces(self, win):
         piece_images = {
@@ -83,6 +98,9 @@ class Chessboard:
                 piece = self.board[row * 8 + col]
                 if piece != 0:
                     win.blit(piece_images[piece], (col * SQUARE_SIZE, row * SQUARE_SIZE))
+                if self.promotion_square:
+                    row, col = self.promotion_square
+                    pygame.draw.rect(win, RED, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE), 3)
 
     def get_square(self, x, y):
         col = x // SQUARE_SIZE
@@ -336,7 +354,7 @@ def main():
 
         # Render text areas
         turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
-        win.blit(turn_text, (20, HEIGHT - 20))  # Position the text below the game board
+        win.blit(turn_text, (20, HEIGHT - 30))  # Position the text below the game board
 
         pygame.display.update()
         clock.tick(60)
