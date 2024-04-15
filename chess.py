@@ -477,17 +477,26 @@ def main():
                                 chessboard.valid_moves = chessboard.get_valid_moves(row, col)
                     else:
                         if (row, col) in chessboard.valid_moves:
-                            chessboard.move_piece(row, col, win)  # Move the piece
-                            if chessboard.piece_moved:
-                                chessboard.selected_piece = None
-                                chessboard.valid_moves = {}
-                                # Check for checkmate after each move
-                                winner = check_for_checkmate(chessboard)
-                                if winner:
-                                    print(f"Checkmate! {winner.upper()} Loses!")
-                                    run = False  # End the game
-                                else:
-                                    chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
+                            # Create a temporary copy of the chessboard to simulate the move
+                            temp_chessboard = deepcopy(chessboard)
+                            temp_chessboard.move_piece(row, col, win)
+                            # Check if the player's king is still under attack after the move
+                            if not temp_chessboard.is_king_under_attack(chessboard.active_color):
+                                # Move is valid, update the actual chessboard
+                                chessboard.move_piece(row, col, win)
+                                if chessboard.piece_moved:
+                                    chessboard.selected_piece = None
+                                    chessboard.valid_moves = {}
+                                    # Check for checkmate after each move
+                                    winner = check_for_checkmate(chessboard)
+                                    if winner:
+                                        print(f"Checkmate! {winner.upper()} Loses!")
+                                        run = False  # End the game
+                                    else:
+                                        chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
+                            else:
+                                print("Invalid Move: King is in check!")
+                                # Optionally, you can provide feedback to the player that the move is invalid
                         else:
                             chessboard.selected_piece = None
                             chessboard.valid_moves = {}
