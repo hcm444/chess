@@ -149,6 +149,9 @@ class Chessboard:
                         pygame.draw.rect(win, light_green,
                                          (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
+        # Draw pieces on the board
+        self.draw_pieces(win)
+
     def draw_pieces(self, win):
         piece_images = {
             1: pygame.transform.scale(pygame.image.load("static/white_pawn.png"), (SQUARE_SIZE, SQUARE_SIZE)),
@@ -495,7 +498,7 @@ def main():
                                     else:
                                         chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
                             else:
-                                print("Invalid Move: King is in check!")
+                                pass
                                 # Optionally, you can provide feedback to the player that the move is invalid
                         else:
                             chessboard.selected_piece = None
