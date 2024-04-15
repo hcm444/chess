@@ -25,28 +25,6 @@ class Chessboard:
         self.promotion_square = None  # Track the square where promotion occurs
         self.promotion_piece = None  # Track the piece to promote to
 
-    def get_king_position(self, color):
-        king_position = None
-        for i, piece in enumerate(self.board):
-            if (color == 'w' and piece == 6) or (color == 'b' and piece == -6):
-                king_position = divmod(i, 8)
-                break
-        return king_position
-    def is_king_in_check(self, color):
-        king_position = self.get_king_position(color)
-        if king_position is None:
-            return False  # King not found (game over condition)
-
-        # Check if the king is under attack by any opponent pieces
-        for row in range(8):
-            for col in range(8):
-                if (color == 'w' and self.board[row * 8 + col] < 0) or \
-                   (color == 'b' and self.board[row * 8 + col] > 0):
-                    valid_moves = self.get_valid_moves(row, col)
-                    if king_position in valid_moves:
-                        return True  # King is in check
-
-        return False  # King is not in check
     def pawn_promotion(self, row, col, win):
         self.valid_moves = {}  # Reset valid_moves dictionary
         promotion_options = {
@@ -239,7 +217,7 @@ class Chessboard:
         # For simplicity, assume all squares are safe for now
         return True
 
-    def get_valid_moves(self, row, col, protect_king=False):
+    def get_valid_moves(self, row, col):
         piece = self.board[row * 8 + col]
         valid_moves = set()
 
@@ -255,13 +233,13 @@ class Chessboard:
                 valid_moves.add((row - 1, col - 1))
             if row > 0 and col < 7 and self.board[(row - 1) * 8 + col + 1] < 0:
                 valid_moves.add((row - 1, col + 1))
-            # En passant capture
             if row == 3 and self.en_passant_target and col - 1 >= 0 and \
                     (row, col - 1) == self.en_passant_target:
                 valid_moves.add((row - 1, col - 1))
             if row == 3 and self.en_passant_target and col + 1 <= 7 and \
                     (row, col + 1) == self.en_passant_target:
                 valid_moves.add((row - 1, col + 1))
+
 
         elif piece == -1:  # Black Pawn
             # Move one square forward
@@ -274,13 +252,6 @@ class Chessboard:
             if row < 7 and col > 0 and self.board[(row + 1) * 8 + col - 1] > 0:
                 valid_moves.add((row + 1, col - 1))
             if row < 7 and col < 7 and self.board[(row + 1) * 8 + col + 1] > 0:
-                valid_moves.add((row + 1, col + 1))
-            # En passant capture
-            if row == 4 and self.en_passant_target and col - 1 >= 0 and \
-                    (row, col - 1) == self.en_passant_target:
-                valid_moves.add((row + 1, col - 1))
-            if row == 4 and self.en_passant_target and col + 1 <= 7 and \
-                    (row, col + 1) == self.en_passant_target:
                 valid_moves.add((row + 1, col + 1))
 
         elif piece == 2 or piece == -2:  # Knight
@@ -355,14 +326,6 @@ class Chessboard:
                     if target_piece == 0 or (piece < 0) != (target_piece < 0):
                         if self.squares_not_under_attack(row, col) and self.squares_not_under_attack(new_row, new_col):
                             valid_moves.add((new_row, new_col))
-
-
-        if protect_king:
-            king_position = self.get_king_position(self.active_color)
-            if king_position:
-                valid_moves.intersection_update(self.get_valid_moves(king_position[0], king_position[1]))
-
-
         return valid_moves
 
     def get_fen(self):
@@ -385,10 +348,9 @@ class Chessboard:
                 if i != 63:
                     fen_board += "/"
 
-        # Ensure self.en_passant_target is a string or provide a default value if it's None
-        en_passant_target_str = self.en_passant_target if self.en_passant_target is not None else "-"
+        return fen_board
 
-        fen = fen_board + " " + self.active_color + " " + self.castling_rights + " " + en_passant_target_str + " "
+        fen = fen_board + " " + self.active_color + " " + self.castling_rights + " " + self.en_passant_target + " "
         fen += str(self.halfmove_clock) + " " + str(self.fullmove_number)
         return fen
 
@@ -397,7 +359,6 @@ class Chessboard:
                          -1: 'p', 1: "P", 4: 'R', 2: 'N', 3: 'B', 5: 'Q', 6: 'K'}
         return piece_mapping.get(value, ' ')
 
-
 def main():
     pygame.init()
     win = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -405,15 +366,12 @@ def main():
     clock = pygame.time.Clock()
 
     chessboard = Chessboard()
-    #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-    starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    starting_fen = "rnbq1bnr/pppkPppp/8/8/2P5/1Q6/PP1pPPPP/RNB1KBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
-    font = pygame.font.SysFont(None, 36)  # Use SysFont instead of None
-    print(chessboard.get_fen())  # Print initial FEN string
+    font = pygame.font.SysFont(None, 36)
+    print(chessboard.get_fen())
 
-    # Inside the main loop where event handling occurs
-    double_click_time = 0  # Variable to store the time of the last click
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -422,61 +380,35 @@ def main():
                 if event.button == 1:  # Left mouse button clicked
                     x, y = pygame.mouse.get_pos()
                     row, col = chessboard.get_square(x, y)
-                    piece = chessboard.board[row * 8 + col]
-
-                    if piece != 0:  # If the clicked square contains a piece
-                        # If no piece is currently selected or the clicked piece is of the current player's color
-                        if chessboard.selected_piece is None or \
-                                (piece > 0 and chessboard.active_color == 'w') or \
-                                (piece < 0 and chessboard.active_color == 'b'):
-                            # Select the clicked piece and show its valid moves
-                            chessboard.selected_piece = (row, col)
-                            chessboard.valid_moves = chessboard.get_valid_moves(row, col)
-                        # If a piece is already selected and the clicked piece is of the current player's color
-                        elif (piece > 0 and chessboard.active_color == 'w' and chessboard.board[row * 8 + col] > 0) or \
-                                (piece < 0 and chessboard.active_color == 'b' and chessboard.board[row * 8 + col] < 0):
-                            # Update the selected piece to the newly clicked piece and show its valid moves
-                            chessboard.selected_piece = (row, col)
-                            chessboard.valid_moves = chessboard.get_valid_moves(row, col)
-                        # If a piece is already selected and the clicked piece is not of the current player's color
-                        else:
-                            # Move the selected piece to the clicked square if it's a valid move
-                            chessboard.move_piece(row, col, win)
-                            # If the piece was moved successfully, reset the selected piece and valid moves
-                            if chessboard.piece_moved:
-                                chessboard.selected_piece = None
-                                chessboard.valid_moves = {}
-                                print(chessboard.get_fen())  # Print FEN string after each move
-
-                                # Switch active color after handling events and drawing the board
-                                chessboard.switch_active_color()  # Move this line inside the event handling block
-                                if chessboard.is_king_in_check('w'):
-                                    print("White King is in check!")
-                                if chessboard.is_king_in_check('b'):
-                                    print("Black King is in check!")
+                    if chessboard.selected_piece is None:
+                        # If no piece is selected, select the piece at the clicked square
+                        if chessboard.board[row * 8 + col] != 0:
+                            # Check if it's the current player's turn
+                            piece = chessboard.board[row * 8 + col]
+                            if (piece > 0 and chessboard.active_color == 'w') or (
+                                    piece < 0 and chessboard.active_color == 'b'):
+                                chessboard.selected_piece = (row, col)
+                                chessboard.valid_moves = chessboard.get_valid_moves(row, col)
                     else:
-                        # If the clicked square is a valid move for the selected piece, move it there
+                        # If a piece is already selected, try to move it to the clicked square
                         if (row, col) in chessboard.valid_moves:
-                            chessboard.move_piece(row, col, win)
-                            # If the piece was moved successfully, reset the selected piece and valid moves
-                            if chessboard.piece_moved:
+                            # Ensure the destination is a valid move
+                            chessboard.move_piece(row, col, win)  # Move the piece
+                            if chessboard.piece_moved:  # Check if a piece has been successfully moved
                                 chessboard.selected_piece = None
                                 chessboard.valid_moves = {}
                                 print(chessboard.get_fen())  # Print FEN string after each move
+                                chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
+                        else:
+                            # If the clicked square is not a valid move, deselect the piece
+                            chessboard.selected_piece = None
+                            chessboard.valid_moves = {}
 
-                                # Switch active color after handling events and drawing the board
-                                chessboard.switch_active_color()  # Move this line inside the event handling block
-                                if chessboard.is_king_in_check('w'):
-                                    print("White King is in check!")
-                                if chessboard.is_king_in_check('b'):
-                                    print("Black King is in check!")
-        # Draw the board and pieces
         chessboard.draw_board(win)
         chessboard.draw_pieces(win)
 
-        # Render text areas
         turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
-        win.blit(turn_text, (20, HEIGHT - 30))  # Position the text below the game board
+        win.blit(turn_text, (20, HEIGHT - 30))
 
         pygame.display.update()
         clock.tick(60)
