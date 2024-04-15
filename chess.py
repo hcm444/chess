@@ -195,6 +195,9 @@ class Chessboard:
                 if (row, col) in self.valid_moves and \
                         (piece > 0 and self.active_color == 'w' or piece < 0 and self.active_color == 'b'):
                     # Move the piece only if it's the correct player's turn
+                    start_square = chr(self.selected_piece[1] + 97) + str(8 - self.selected_piece[0])
+                    end_square = chr(col + 97) + str(8 - row)
+                    print(f"{start_square} -> {end_square}")  # Print move in chess notation
                     self.board[row * 8 + col] = piece
                     self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
 
@@ -238,6 +241,8 @@ class Chessboard:
     def get_valid_moves(self, row, col):
         piece = self.board[row * 8 + col]
         valid_moves = set()
+
+
 
         if piece == 1:  # White Pawn
             # Move one square forward
@@ -420,6 +425,7 @@ def check_for_checkmate(chessboard):
     for active_color in ['w', 'b']:
         if chessboard.is_king_under_attack(active_color):
             print(f"{active_color.upper()} King is under attack!")
+            valid_moves_to_escape = []
             for row in range(8):
                 for col in range(8):
                     piece = chessboard.board[row * 8 + col]
@@ -437,13 +443,16 @@ def check_for_checkmate(chessboard):
                             temp_chessboard.board = temp_board
                             temp_chessboard.active_color = active_color
                             if not temp_chessboard.is_king_under_attack(active_color):
-                                print(f"Check! {piece_color} piece at {start_square} can move to {end_square}.")
-                                return
-                            else:
-                                print(f"{piece_color} piece at {start_square} can't move to {end_square} - puts king in check.")
-            print(f"{active_color.upper()} Checkmate!")
+                                valid_moves_to_escape.append((start_square, end_square))
+            if valid_moves_to_escape:
+                print("Valid moves to get out of check:")
+                for move in valid_moves_to_escape:
+                    print(f"Move {move[0]} to {move[1]}")
+            else:
+                print(f"{active_color.upper()} Checkmate!")
+                return active_color  # Return the winning player
         else:
-            print(f"{active_color.upper()} King is not under attack.")
+            pass
 
 
 
@@ -496,9 +505,13 @@ def main():
                             if chessboard.piece_moved:
                                 chessboard.selected_piece = None
                                 chessboard.valid_moves = {}
-                                print(chessboard.get_fen())  # Print FEN string after each move
-                                check_for_checkmate(chessboard)  # Check for checkmate after each move
-                                chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
+                                #print(chessboard.get_fen())  # Print FEN string after each move
+                                winner = check_for_checkmate(chessboard)  # Check for checkmate after each move
+                                if winner:
+                                    print(f"Checkmate! {winner.upper()} Loses!")
+                                    run = False  # End the game
+                                else:
+                                    chessboard.switch_active_color()  #  # Switch active color after handling events and drawing the board
                         else:
                             chessboard.selected_piece = None
                             chessboard.valid_moves = {}
