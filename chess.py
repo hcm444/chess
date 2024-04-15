@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pygame
 import numpy as np
 
@@ -195,9 +197,9 @@ class Chessboard:
                 if (row, col) in self.valid_moves and \
                         (piece > 0 and self.active_color == 'w' or piece < 0 and self.active_color == 'b'):
                     # Move the piece only if it's the correct player's turn
-                    start_square = chr(self.selected_piece[1] + 97) + str(8 - self.selected_piece[0])
-                    end_square = chr(col + 97) + str(8 - row)
-                    print(f"{start_square} -> {end_square}")  # Print move in chess notation
+                    #start_square = chr(self.selected_piece[1] + 97) + str(8 - self.selected_piece[0])
+                    #end_square = chr(col + 97) + str(8 - row)
+                    #print(f"{start_square} -> {end_square}")  # Print move in chess notation
                     self.board[row * 8 + col] = piece
                     self.board[self.selected_piece[0] * 8 + self.selected_piece[1]] = 0
 
@@ -424,7 +426,6 @@ def filter_safe_moves(chessboard, moves):
 def check_for_checkmate(chessboard):
     for active_color in ['w', 'b']:
         if chessboard.is_king_under_attack(active_color):
-            print(f"{active_color.upper()} King is under attack!")
             valid_moves_to_escape = []
             for row in range(8):
                 for col in range(8):
@@ -445,32 +446,13 @@ def check_for_checkmate(chessboard):
                             if not temp_chessboard.is_king_under_attack(active_color):
                                 valid_moves_to_escape.append((start_square, end_square))
             if valid_moves_to_escape:
-                print("Valid moves to get out of check:")
-                for move in valid_moves_to_escape:
-                    print(f"Move {move[0]} to {move[1]}")
+                print(f"{active_color.upper()} Check!")
+
             else:
                 print(f"{active_color.upper()} Checkmate!")
                 return active_color  # Return the winning player
         else:
             pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def main():
     pygame.init()
@@ -505,19 +487,42 @@ def main():
                             if chessboard.piece_moved:
                                 chessboard.selected_piece = None
                                 chessboard.valid_moves = {}
-                                #print(chessboard.get_fen())  # Print FEN string after each move
-                                winner = check_for_checkmate(chessboard)  # Check for checkmate after each move
+                                # Check for checkmate after each move
+                                winner = check_for_checkmate(chessboard)
                                 if winner:
                                     print(f"Checkmate! {winner.upper()} Loses!")
                                     run = False  # End the game
                                 else:
-                                    chessboard.switch_active_color()  #  # Switch active color after handling events and drawing the board
+                                    chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
                         else:
                             chessboard.selected_piece = None
                             chessboard.valid_moves = {}
 
+        # If the player is in check, filter the valid moves to only allow moves that get out of check
+        if chessboard.is_king_under_attack(chessboard.active_color):
+            moves_to_remove = set()  # Create a set to store moves to be removed
+            for row, col in chessboard.valid_moves:
+                # Create a temporary copy of the chessboard to simulate the move
+                temp_chessboard = deepcopy(chessboard)
+                temp_chessboard.move_piece(row, col, win)
+                if temp_chessboard.is_king_under_attack(chessboard.active_color):
+                    # If the move still leaves the king under attack, add it to the set of moves to remove
+                    moves_to_remove.add((row, col))
+            # Remove invalid moves from the set of valid moves
+            for move in moves_to_remove:
+                chessboard.valid_moves.remove(move)
+
         chessboard.draw_board(win)
         chessboard.draw_pieces(win)
+
+        if check_for_checkmate(chessboard):
+            check_status = f"{check_for_checkmate(chessboard).capitalize()} Checkmate!"
+        elif chessboard.is_king_under_attack(chessboard.active_color):
+            check_status = f"{chessboard.active_color.capitalize()} Check"
+        else:
+            check_status = ""
+        check_text = font.render(check_status, True, BLACK)
+        win.blit(check_text, (20, HEIGHT - 60))
 
         turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
         win.blit(turn_text, (20, HEIGHT - 30))
