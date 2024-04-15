@@ -235,11 +235,6 @@ class Chessboard:
                 return False
         return True
 
-    def squares_not_under_attack(self, row, col):
-        # Check if the squares the king moves through and ends up in are not under attack
-        # For simplicity, assume all squares are safe for now
-        return True
-
     def get_valid_moves(self, row, col):
         piece = self.board[row * 8 + col]
         valid_moves = set()
@@ -349,7 +344,7 @@ class Chessboard:
                 if 0 <= new_row < 8 and 0 <= new_col < 8:
                     target_piece = self.board[new_row * 8 + new_col]
                     if target_piece == 0 or (piece < 0) != (target_piece < 0):
-                        if self.squares_not_under_attack(row, col) and self.squares_not_under_attack(new_row, new_col):
+                        if True and True:
                             valid_moves.add((new_row, new_col))
 
         return valid_moves
@@ -376,9 +371,7 @@ class Chessboard:
 
         return fen_board
 
-        fen = fen_board + " " + self.active_color + " " + self.castling_rights + " " + self.en_passant_target + " "
-        fen += str(self.halfmove_clock) + " " + str(self.fullmove_number)
-        return fen
+
 
     def get_piece_symbol(self, value):
         piece_mapping = {-4: 'r', -2: 'n', -3: 'b', -5: 'q', -6: 'k',
@@ -430,14 +423,14 @@ def check_for_checkmate(chessboard):
             for row in range(8):
                 for col in range(8):
                     piece = chessboard.board[row * 8 + col]
-                    piece_color = "White" if piece > 0 else "Black"
+
                     if (piece > 0 and active_color == 'w') or (piece < 0 and active_color == 'b'):
                         valid_moves = chessboard.get_valid_moves(row, col)
                         for move in valid_moves:
                             start_square = chr(col + 97) + str(8 - row)
                             end_square = chr(move[1] + 97) + str(8 - move[0])
                             temp_board = chessboard.board.copy()
-                            original_piece = temp_board[move[0] * 8 + move[1]]
+
                             temp_board[move[0] * 8 + move[1]] = temp_board[row * 8 + col]
                             temp_board[row * 8 + col] = 0
                             temp_chessboard = Chessboard()
@@ -446,10 +439,11 @@ def check_for_checkmate(chessboard):
                             if not temp_chessboard.is_king_under_attack(active_color):
                                 valid_moves_to_escape.append((start_square, end_square))
             if valid_moves_to_escape:
-                print(f"{active_color.upper()} Check!")
-
+                #print(f"{active_color.upper()} Check!")
+                pass
             else:
-                print(f"{active_color.upper()} Checkmate!")
+                #print(f"{active_color.upper()} Checkmate!")
+                pass
                 return active_color  # Return the winning player
         else:
             pass
