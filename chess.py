@@ -366,7 +366,8 @@ def main():
     clock = pygame.time.Clock()
 
     chessboard = Chessboard()
-    starting_fen = "rnbq1bnr/pppkPppp/8/8/2P5/1Q6/PP1pPPPP/RNB1KBNR w KQkq - 0 1"
+    #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
+    starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
     font = pygame.font.SysFont(None, 36)
