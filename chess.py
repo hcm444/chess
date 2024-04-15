@@ -526,7 +526,6 @@ def main():
 
         # Render the final move if checkmate is achieved
 
-
         pygame.display.update()
         clock.tick(60)
 
