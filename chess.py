@@ -461,15 +461,13 @@ def main():
     starting_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     chessboard.initialize_board_from_fen(starting_fen)
     run = True
-    frozen = False  # Introduce a flag for the frozen state
-    final_move = None  # Variable to store the final move that led to checkmate
     font = pygame.font.SysFont(None, 36)
 
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and not frozen:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button clicked
                     x, y = pygame.mouse.get_pos()
                     row, col = chessboard.get_square(x, y)
@@ -496,8 +494,7 @@ def main():
                                     winner = check_for_checkmate(chessboard)
                                     if winner:
                                         print(f"Checkmate! {winner.upper()} Loses!")
-                                        frozen = True  # Set the frozen state
-                                        final_move = (row, col)  # Store the final move
+                                        run = False  # End the game
                                     else:
                                         chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
                             else:
@@ -507,11 +504,23 @@ def main():
                             chessboard.selected_piece = None
                             chessboard.valid_moves = {}
 
-        # Render the board and game status
+        # If the player is in check, filter the valid moves to only allow moves that get out of check
+        if chessboard.is_king_under_attack(chessboard.active_color):
+            moves_to_remove = set()  # Create a set to store moves to be removed
+            for row, col in chessboard.valid_moves:
+                # Create a temporary copy of the chessboard to simulate the move
+                temp_chessboard = deepcopy(chessboard)
+                temp_chessboard.move_piece(row, col, win)
+                if temp_chessboard.is_king_under_attack(chessboard.active_color):
+                    # If the move still leaves the king under attack, add it to the set of moves to remove
+                    moves_to_remove.add((row, col))
+            # Remove invalid moves from the set of valid moves
+            for move in moves_to_remove:
+                chessboard.valid_moves.remove(move)
+
         chessboard.draw_board(win)
         chessboard.draw_pieces(win)
 
-        # Render check and turn information
         if check_for_checkmate(chessboard):
             check_status = f"{check_for_checkmate(chessboard).capitalize()} Checkmate!"
         elif chessboard.is_king_under_attack(chessboard.active_color):
@@ -524,13 +533,10 @@ def main():
         turn_text = font.render("Turn: White" if chessboard.active_color == 'w' else "Turn: Black", True, BLACK)
         win.blit(turn_text, (20, HEIGHT - 30))
 
-        # Render the final move if checkmate is achieved
-
         pygame.display.update()
         clock.tick(60)
+
     pygame.quit()
 
 if __name__ == "__main__":
     main()
-
-
