@@ -27,6 +27,7 @@ class Chessboard:
         self.promotion_square = None  # Track the square where promotion occurs
         self.promotion_piece = None  # Track the piece to promote to
 
+
     def is_king_under_attack(self, color):
         # Find the position of the king of the specified color
         king_position = get_king_position(self, color)
@@ -44,6 +45,45 @@ class Chessboard:
                     return True
 
         return False
+    def perform_castling(self, direction):
+        king_row, king_col = get_king_position(self, self.active_color)
+
+        if direction == "k":  # King side castling
+            if king_col + 2 > 7:  # Check if the king is not already at the edge of the board
+                return  # Invalid castling
+            # Check if there are no pieces between the king and the rook
+            if any(self.board[king_row * 8 + col] != 0 for col in range(king_col + 1, king_col + 3)):
+                return  # Invalid castling
+            # Check if the king passes through or finishes on a square attacked by an enemy piece
+            if self.is_king_under_attack(self.active_color) or \
+                    any(self.is_king_under_attack(self.active_color) for col in range(king_col, king_col + 3)):
+                return  # Invalid castling
+            # Move the king two squares to the right
+            self.board[king_row * 8 + king_col + 2] = self.board[king_row * 8 + king_col]
+            self.board[king_row * 8 + king_col] = 0
+            # Move the rook to the square next to the king
+            self.board[king_row * 8 + king_col + 1] = self.board[king_row * 8 + 7]
+            self.board[king_row * 8 + 7] = 0
+
+        elif direction == "q":  # Queen side castling
+            if king_col - 2 < 0:  # Check if the king is not already at the edge of the board
+                return  # Invalid castling
+            # Check if there are no pieces between the king and the rook
+            if any(self.board[king_row * 8 + col] != 0 for col in range(king_col - 2, king_col)):
+                return  # Invalid castling
+            # Check if the king passes through or finishes on a square attacked by an enemy piece
+            if self.is_king_under_attack(self.active_color) or \
+                    any(self.is_king_under_attack(self.active_color) for col in range(king_col - 2, king_col + 1)):
+                return  # Invalid castling
+            # Move the king two squares to the left
+            self.board[king_row * 8 + king_col - 2] = self.board[king_row * 8 + king_col]
+            self.board[king_row * 8 + king_col] = 0
+            # Move the rook to the square next to the king
+            self.board[king_row * 8 + king_col - 1] = self.board[king_row * 8]
+            self.board[king_row * 8] = 0
+
+        # Update any other game state variables as needed
+
 
     def pawn_promotion(self, row, col, win):
         self.valid_moves = {}  # Reset valid_moves dictionary
@@ -494,7 +534,7 @@ def main():
                                     winner = check_for_checkmate(chessboard)
                                     if winner:
                                         print(f"Checkmate! {winner.upper()} Loses!")
-                                        run = False  # End the game
+
                                     else:
                                         chessboard.switch_active_color()  # Switch active color after handling events and drawing the board
                             else:
