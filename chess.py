@@ -283,7 +283,6 @@ class Chessboard:
         valid_moves = set()
 
 
-
         if piece == 1:  # White Pawn
             # Move one square forward
             if row > 0 and self.board[(row - 1) * 8 + col] == 0:
@@ -295,12 +294,6 @@ class Chessboard:
             if row > 0 and col > 0 and self.board[(row - 1) * 8 + col - 1] < 0:
                 valid_moves.add((row - 1, col - 1))
             if row > 0 and col < 7 and self.board[(row - 1) * 8 + col + 1] < 0:
-                valid_moves.add((row - 1, col + 1))
-            if row == 3 and self.en_passant_target and col - 1 >= 0 and \
-                    (row, col - 1) == self.en_passant_target:
-                valid_moves.add((row - 1, col - 1))
-            if row == 3 and self.en_passant_target and col + 1 <= 7 and \
-                    (row, col + 1) == self.en_passant_target:
                 valid_moves.add((row - 1, col + 1))
 
 
