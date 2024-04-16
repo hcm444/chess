@@ -297,6 +297,7 @@ class Chessboard:
                 valid_moves.add((row - 1, col + 1))
 
 
+
         elif piece == -1:  # Black Pawn
             # Move one square forward
             if row < 7 and self.board[(row + 1) * 8 + col] == 0:
